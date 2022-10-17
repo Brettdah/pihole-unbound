@@ -1,0 +1,51 @@
+---
+version: '3.1'
+
+#SERVICES
+services:
+  pihole:
+    image: pihole/pihole:2022.10
+    #domainname: dns.domain.tld
+    privileged: true
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      #- "67:67/udp"  # used for DHCP
+      - 8084:80/tcp
+    security_opt:
+      - no-new-privileges=true
+    depends_on:
+      - unbound
+    environment:
+      #- DNSMASQ_USER=pihole
+      #- WEB_PORT: 8081
+      #- DNSMASQ_LISTING: local
+      TZ: Europe/Paris
+      DNSMASQ_USER: root
+      FTLCONF_REPLY_ADDR4: 192.168.1.249
+      PIHOLE_DNS_: "127.0.0.1#5053;127.0.0.1#5053"
+    labels:
+      - traefik.enable=false
+    volumes:
+      - $PWD/data/pihole/etc/pihole:/etc/pihole
+      - $PWD/data/pihole/etc/dnsmasq.d:/etc/dnsmasq.d
+
+  unbound:
+    image: klutchell/unbound:1.17.0
+    restart: unless-stopped
+    privileged: true
+    security_opt:
+      - no-new-privileges=true
+    # If you want to expose port for test purpose
+    #ports:
+    #  - "5353:5053/tcp"
+    #  - "5053:5053/udp"
+    volumes:
+      - $PWD/data/unbound/etc/unbound/custom.conf.d/:/etc/unbound/custom.conf.d
+    # need some trouble shouting
+    #healthcheck:
+    #  test: ["CMD", "dig", "-p", "5053", "sigok.verteiltesysteme.net", "@127.0.0.1"]
+    #  interval: 30s
+    #  timeout: 30s
+    #  retries: 3
+    #  start_period: 30s # to test with docker compose
